@@ -1,0 +1,32 @@
+TUMMI – Food Discovery App
+1.1 User Experience
+
+1.1.1 Onboarding questionnaire to gather cravings and dietary preferences
+1.1.2 Explore nearby or trending restaurants
+1.1.3 View restaurant details (menu, ratings, dietary compatibility)
+1.1.4 Save favorite restaurants for later
+1.1.5 Search by cuisine, diet, or name
+
+1.2 Recommendations
+
+1.2.1 Personalized restaurant suggestions based on preferences
+1.2.2 Filter results by distance, cuisine, or price
+1.2.3 Optional: Learn user tastes over time for smarter suggestions
+
+1.3 Accounts
+
+1.3.1 User registration and login
+1.3.2 Manage dietary preferences and favorites
+1.3.3 Optional: Profile customization
+
+1.4 Data & Backend
+
+1.4.1 Store restaurant, user, and preference data
+1.4.2 API integration for restaurant info and location services
+1.4.3 Ensure secure authentication and data handling
+
+1.5 Other
+
+1.5.1 Testing for onboarding, search, and favorites
+1.5.2 Presentation slides and documentation (use cases, design, diagrams)
+1.5.3 Optional: Frontend and backend prototype
