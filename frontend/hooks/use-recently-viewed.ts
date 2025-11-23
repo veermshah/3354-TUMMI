@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+import { Restaurant } from "../types/restaurant";
 
 export function useRecentlyViewed() {
     const { user } = useAuth();
     const [recentlyViewed, setRecentlyViewed] = useState<string[]>([]);
+    const [recentRestaurants, setRecentRestaurants] = useState<Restaurant[]>(
+        []
+    );
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -12,6 +16,7 @@ export function useRecentlyViewed() {
             loadRecentlyViewed();
         } else {
             setRecentlyViewed([]);
+            setRecentRestaurants([]);
             setLoading(false);
         }
     }, [user]);
@@ -22,7 +27,7 @@ export function useRecentlyViewed() {
         try {
             const { data, error } = await supabase
                 .from("recently_viewed")
-                .select("restaurant_id")
+                .select("restaurant_id, restaurant_data")
                 .eq("user_id", user.id)
                 .order("viewed_at", { ascending: false })
                 .limit(20);
@@ -31,6 +36,11 @@ export function useRecentlyViewed() {
                 console.error("Error loading recently viewed:", error);
             } else {
                 setRecentlyViewed(data.map((item) => item.restaurant_id));
+                setRecentRestaurants(
+                    data
+                        .filter((item) => item.restaurant_data)
+                        .map((item) => item.restaurant_data as Restaurant)
+                );
             }
         } catch (error) {
             console.error("Error loading recently viewed:", error);
@@ -39,45 +49,33 @@ export function useRecentlyViewed() {
         }
     };
 
-    const addToRecentlyViewed = async (restaurantId: string) => {
+    const addToRecentlyViewed = async (
+        restaurantId: string,
+        restaurantData?: Restaurant
+    ) => {
         if (!user) return;
 
         try {
-            // Check if already exists
-            const { data: existing } = await supabase
-                .from("recently_viewed")
-                .select("id")
-                .eq("user_id", user.id)
-                .eq("restaurant_id", restaurantId)
-                .single();
-
-            if (existing) {
-                // Update viewed_at timestamp
-                const { error } = await supabase
-                    .from("recently_viewed")
-                    .update({ viewed_at: new Date().toISOString() })
-                    .eq("user_id", user.id)
-                    .eq("restaurant_id", restaurantId);
-
-                if (error) {
-                    console.error("Error updating recently viewed:", error);
+            // Use upsert to insert or update - this handles duplicates automatically
+            // onConflict specifies which columns define uniqueness
+            const { error } = await supabase.from("recently_viewed").upsert(
+                {
+                    user_id: user.id,
+                    restaurant_id: restaurantId,
+                    restaurant_data: restaurantData,
+                    viewed_at: new Date().toISOString(),
+                },
+                {
+                    onConflict: "user_id,restaurant_id",
                 }
+            );
+
+            if (error) {
+                console.error("Error adding to recently viewed:", error);
             } else {
-                // Insert new record
-                const { error } = await supabase
-                    .from("recently_viewed")
-                    .insert({
-                        user_id: user.id,
-                        restaurant_id: restaurantId,
-                    });
-
-                if (error) {
-                    console.error("Error adding to recently viewed:", error);
-                }
+                // Reload the list to reflect changes
+                await loadRecentlyViewed();
             }
-
-            // Reload the list to reflect changes
-            await loadRecentlyViewed();
         } catch (error) {
             console.error("Error adding to recently viewed:", error);
         }
@@ -85,6 +83,7 @@ export function useRecentlyViewed() {
 
     return {
         recentlyViewed,
+        recentRestaurants,
         loading,
         addToRecentlyViewed,
     };

@@ -2,16 +2,33 @@ import React from "react";
 import { StyleSheet, ScrollView, View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { router, useFocusEffect } from "expo-router";
 import { RestaurantCard } from "@/components/restaurant-card";
-import { mockRestaurants } from "@/data/mockData";
 import { useFavorites } from "@/hooks/use-favorites";
+import { useRestaurants } from "@/hooks/use-restaurants";
+import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 
 export default function FavoritesScreen() {
-    const { favorites, toggleFavorite, isFavorite, loading } = useFavorites();
+    const {
+        favoriteRestaurants,
+        toggleFavorite,
+        isFavorite,
+        loading,
+        refreshFavorites,
+    } = useFavorites();
+    const { addToRecentlyViewed } = useRecentlyViewed();
 
-    const favoriteRestaurants = mockRestaurants.filter((r) =>
-        favorites.includes(r.id)
+    // Reload favorites when this screen comes into focus
+    useFocusEffect(
+        React.useCallback(() => {
+            refreshFavorites();
+        }, [])
     );
+
+    const handleRestaurantPress = (restaurant: any) => {
+        addToRecentlyViewed(restaurant.id, restaurant);
+        router.push(`/restaurant/${restaurant.id}`);
+    };
 
     if (loading) {
         return (
@@ -40,8 +57,9 @@ export default function FavoritesScreen() {
                             key={restaurant.id}
                             restaurant={restaurant}
                             isFavorite={true}
+                            onPress={() => handleRestaurantPress(restaurant)}
                             onFavoriteToggle={() =>
-                                toggleFavorite(restaurant.id)
+                                toggleFavorite(restaurant.id, restaurant)
                             }
                         />
                     ))}

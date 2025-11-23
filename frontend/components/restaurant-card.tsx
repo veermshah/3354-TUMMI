@@ -5,6 +5,7 @@ import {
     StyleSheet,
     TouchableOpacity,
     Pressable,
+    Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Restaurant } from "../types/restaurant";
@@ -28,70 +29,83 @@ export function RestaurantCard({
             onPress={onPress}
             activeOpacity={0.7}
         >
-            <View style={styles.header}>
-                <View style={styles.headerLeft}>
-                    <Text style={styles.name}>{restaurant.name}</Text>
-                    <View style={styles.cuisineContainer}>
-                        {restaurant.cuisine
-                            .slice(0, 2)
-                            .map((cuisine, index) => (
-                                <View key={index} style={styles.cuisineTag}>
-                                    <Text style={styles.cuisineText}>
-                                        {cuisine}
-                                    </Text>
-                                </View>
-                            ))}
+            {restaurant.imageUrl && (
+                <Image
+                    source={{ uri: restaurant.imageUrl }}
+                    style={styles.image}
+                    resizeMode="cover"
+                />
+            )}
+            <View style={styles.content}>
+                <View style={styles.header}>
+                    <View style={styles.headerLeft}>
+                        <Text style={styles.name}>{restaurant.name}</Text>
+                        <View style={styles.cuisineContainer}>
+                            {restaurant.cuisine
+                                .slice(0, 2)
+                                .map((cuisine, index) => (
+                                    <View key={index} style={styles.cuisineTag}>
+                                        <Text style={styles.cuisineText}>
+                                            {cuisine}
+                                        </Text>
+                                    </View>
+                                ))}
+                        </View>
+                    </View>
+                    <Pressable
+                        onPress={onFavoriteToggle}
+                        style={styles.favoriteButton}
+                    >
+                        <Ionicons
+                            name={isFavorite ? "heart" : "heart-outline"}
+                            size={24}
+                            color={isFavorite ? "#FF6B6B" : "#666"}
+                        />
+                    </Pressable>
+                </View>
+
+                <View style={styles.info}>
+                    <View style={styles.infoRow}>
+                        <Ionicons name="star" size={16} color="#FFB800" />
+                        <Text style={styles.infoText}>
+                            {restaurant.rating.toFixed(1)}
+                        </Text>
+                    </View>
+
+                    <View style={styles.infoRow}>
+                        <Ionicons
+                            name="location-outline"
+                            size={16}
+                            color="#666"
+                        />
+                        <Text style={styles.infoText}>
+                            {restaurant.distance.toFixed(1)} mi
+                        </Text>
+                    </View>
+
+                    <View style={styles.infoRow}>
+                        <Text style={styles.priceText}>
+                            {restaurant.priceRange}
+                        </Text>
                     </View>
                 </View>
-                <Pressable
-                    onPress={onFavoriteToggle}
-                    style={styles.favoriteButton}
-                >
-                    <Ionicons
-                        name={isFavorite ? "heart" : "heart-outline"}
-                        size={24}
-                        color={isFavorite ? "#FF6B6B" : "#666"}
-                    />
-                </Pressable>
+
+                {restaurant.dietary && restaurant.dietary.length > 0 && (
+                    <View style={styles.dietaryContainer}>
+                        {restaurant.dietary.slice(0, 3).map((diet, index) => (
+                            <View key={index} style={styles.dietaryTag}>
+                                <Text style={styles.dietaryText}>{diet}</Text>
+                            </View>
+                        ))}
+                    </View>
+                )}
+
+                {restaurant.description && (
+                    <Text style={styles.description} numberOfLines={2}>
+                        {restaurant.description}
+                    </Text>
+                )}
             </View>
-
-            <View style={styles.info}>
-                <View style={styles.infoRow}>
-                    <Ionicons name="star" size={16} color="#FFB800" />
-                    <Text style={styles.infoText}>
-                        {restaurant.rating.toFixed(1)}
-                    </Text>
-                </View>
-
-                <View style={styles.infoRow}>
-                    <Ionicons name="location-outline" size={16} color="#666" />
-                    <Text style={styles.infoText}>
-                        {restaurant.distance.toFixed(1)} mi
-                    </Text>
-                </View>
-
-                <View style={styles.infoRow}>
-                    <Text style={styles.priceText}>
-                        {restaurant.priceRange}
-                    </Text>
-                </View>
-            </View>
-
-            {restaurant.dietary && restaurant.dietary.length > 0 && (
-                <View style={styles.dietaryContainer}>
-                    {restaurant.dietary.slice(0, 3).map((diet, index) => (
-                        <View key={index} style={styles.dietaryTag}>
-                            <Text style={styles.dietaryText}>{diet}</Text>
-                        </View>
-                    ))}
-                </View>
-            )}
-
-            {restaurant.description && (
-                <Text style={styles.description} numberOfLines={2}>
-                    {restaurant.description}
-                </Text>
-            )}
         </TouchableOpacity>
     );
 }
@@ -100,7 +114,6 @@ const styles = StyleSheet.create({
     card: {
         backgroundColor: "#fff",
         borderRadius: 12,
-        padding: 16,
         marginVertical: 8,
         marginHorizontal: 16,
         shadowColor: "#000",
@@ -108,6 +121,15 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 4,
         elevation: 3,
+        overflow: "hidden",
+    },
+    image: {
+        width: "100%",
+        height: 180,
+        backgroundColor: "#f0f0f0",
+    },
+    content: {
+        padding: 16,
     },
     header: {
         flexDirection: "row",

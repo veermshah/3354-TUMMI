@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
     StyleSheet,
     ScrollView,
@@ -7,38 +7,64 @@ import {
     TextInput,
     TouchableOpacity,
     Modal,
+    ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { RestaurantCard } from "@/components/restaurant-card";
-import { mockRestaurants, cuisineOptions } from "@/data/mockData";
+import { cuisineOptions } from "@/data/mockData";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
+import { useRestaurants } from "@/hooks/use-restaurants";
 import { Restaurant } from "@/types/restaurant";
 
 export default function SearchScreen() {
     const { toggleFavorite, isFavorite } = useFavorites();
     const { addToRecentlyViewed } = useRecentlyViewed();
+    const {
+        restaurants,
+        loading,
+        searchRestaurants,
+        fetchNearbyRestaurants,
+        location,
+    } = useRestaurants();
     const [searchQuery, setSearchQuery] = useState("");
     const [showFilters, setShowFilters] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
 
     // Filter states
     const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
     const [minRating, setMinRating] = useState(0);
     const [maxDistance, setMaxDistance] = useState(10);
 
-    const filteredRestaurants = useMemo(() => {
-        return mockRestaurants.filter((restaurant) => {
-            // Search filter
-            const matchesSearch =
-                searchQuery === "" ||
-                restaurant.name
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase()) ||
-                restaurant.cuisine.some((c) =>
-                    c.toLowerCase().includes(searchQuery.toLowerCase())
-                );
+    // Load nearby restaurants on mount
+    useEffect(() => {
+        if (location && restaurants.length === 0 && searchQuery === "") {
+            const radius = maxDistance * 1609; // Convert miles to meters
+            fetchNearbyRestaurants(radius);
+        }
+    }, [location]);
 
+    // Debounced search
+    useEffect(() => {
+        if (searchQuery.length > 2) {
+            setIsSearching(true);
+            const timeoutId = setTimeout(() => {
+                searchRestaurants(searchQuery + " restaurant").finally(() =>
+                    setIsSearching(false)
+                );
+            }, 500);
+            return () => clearTimeout(timeoutId);
+        } else if (searchQuery === "" && location) {
+            // Reset to nearby restaurants when search is cleared
+            const radius = maxDistance * 1609;
+            fetchNearbyRestaurants(radius);
+        }
+    }, [searchQuery]);
+
+    const filteredRestaurants = useMemo(() => {
+        return restaurants.filter((restaurant) => {
             // Cuisine filter
             const matchesCuisine =
                 selectedCuisines.length === 0 ||
@@ -50,14 +76,9 @@ export default function SearchScreen() {
             // Distance filter
             const matchesDistance = restaurant.distance <= maxDistance;
 
-            return (
-                matchesSearch &&
-                matchesCuisine &&
-                matchesRating &&
-                matchesDistance
-            );
+            return matchesCuisine && matchesRating && matchesDistance;
         });
-    }, [searchQuery, selectedCuisines, minRating, maxDistance]);
+    }, [restaurants, selectedCuisines, minRating, maxDistance]);
 
     const toggleCuisine = (cuisine: string) => {
         setSelectedCuisines((prev) =>
@@ -78,10 +99,10 @@ export default function SearchScreen() {
         (minRating > 0 ? 1 : 0) +
         (maxDistance < 10 ? 1 : 0);
 
-    const handleRestaurantPress = (restaurantId: string) => {
+    const handleRestaurantPress = (restaurant: Restaurant) => {
         // Track that user viewed this restaurant
-        addToRecentlyViewed(restaurantId);
-        // TODO: Navigate to restaurant detail page when implemented
+        addToRecentlyViewed(restaurant.id, restaurant);
+        router.push(`/restaurant/${restaurant.id}`);
     };
 
     return (
@@ -111,6 +132,9 @@ export default function SearchScreen() {
                                 color="#666"
                             />
                         </TouchableOpacity>
+                    )}
+                    {isSearching && (
+                        <ActivityIndicator size="small" color="#2E7D32" />
                     )}
                 </View>
 
@@ -145,8 +169,10 @@ export default function SearchScreen() {
                         key={restaurant.id}
                         restaurant={restaurant}
                         isFavorite={isFavorite(restaurant.id)}
-                        onPress={() => handleRestaurantPress(restaurant.id)}
-                        onFavoriteToggle={() => toggleFavorite(restaurant.id)}
+                        onPress={() => handleRestaurantPress(restaurant)}
+                        onFavoriteToggle={() =>
+                            toggleFavorite(restaurant.id, restaurant)
+                        }
                     />
                 ))}
             </ScrollView>

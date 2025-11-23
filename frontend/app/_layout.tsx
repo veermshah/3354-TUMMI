@@ -27,6 +27,7 @@ function RootLayoutNav() {
         const inAuthGroup = segments[0] === "auth";
         const inOnboardingGroup = segments[0] === "onboarding";
         const inTabsGroup = segments[0] === "(tabs)";
+        const inRestaurantGroup = segments[0] === "restaurant";
 
         if (!user && !inAuthGroup) {
             // Redirect to auth if not logged in
@@ -44,10 +45,11 @@ function RootLayoutNav() {
             user &&
             hasCompletedOnboarding &&
             !inTabsGroup &&
+            !inRestaurantGroup &&
             !inAuthGroup
         ) {
             // Redirect to main app if logged in and completed onboarding
-            // Allow access to auth for logout purposes
+            // Allow access to auth and restaurant details
             router.replace("/(tabs)");
         }
     }, [user, loading, hasCompletedOnboarding, segments]);
@@ -63,6 +65,10 @@ function RootLayoutNav() {
                     options={{ headerShown: false }}
                 />
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen
+                    name="restaurant/[id]"
+                    options={{ headerShown: false }}
+                />
                 <Stack.Screen
                     name="modal"
                     options={{ presentation: "modal", title: "Modal" }}

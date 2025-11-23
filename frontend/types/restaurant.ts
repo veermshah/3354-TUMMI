@@ -9,6 +9,9 @@ export interface Restaurant {
     imageUrl?: string;
     description?: string;
     dietary?: string[]; // e.g., 'vegetarian', 'vegan', 'gluten-free'
+    phone?: string;
+    website?: string;
+    photos?: string[]; // Array of photo URLs
 }
 
 export interface UserPreferences {

@@ -1,5 +1,4 @@
 -- Supabase Database Schema for TUMMI App
--- Run this SQL in your Supabase SQL Editor
 
 -- Create user_profiles table
 CREATE TABLE IF NOT EXISTS public.user_profiles (
@@ -67,11 +66,12 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
 
--- Optional: Create favorites table for future use
+-- Create favorites table for future use
 CREATE TABLE IF NOT EXISTS public.user_favorites (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   restaurant_id TEXT NOT NULL,
+  restaurant_data JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
   UNIQUE(user_id, restaurant_id)
 );
@@ -95,11 +95,12 @@ CREATE POLICY "Users can delete own favorites"
   FOR DELETE
   USING (auth.uid() = user_id);
 
--- Optional: Create recently viewed table for future use
+-- Create recently viewed table for future use
 CREATE TABLE IF NOT EXISTS public.recently_viewed (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   restaurant_id TEXT NOT NULL,
+  restaurant_data JSONB,
   viewed_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
   UNIQUE(user_id, restaurant_id)
 );
@@ -123,3 +124,11 @@ CREATE POLICY "Users can update own history"
   FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
+
+-- Add restaurant_data column to store full restaurant information
+ALTER TABLE public.user_favorites 
+ADD COLUMN IF NOT EXISTS restaurant_data JSONB;
+
+-- update recently_viewed table to store restaurant data
+ALTER TABLE public.recently_viewed 
+ADD COLUMN IF NOT EXISTS restaurant_data JSONB;
